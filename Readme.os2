@@ -1,0 +1,61 @@
+original source code from cvs.latex2rtf.sourceforge.net (14.9.2002)
+
+OS/2 modifications
+==================
+
+1) enhanced option -C for "raw" encoding (direct font charset)
+   -----------------------------------------------------------
+   -C chs#     font charset #
+   -C 1250     font charset 238 
+   -C oem      font charset 255 ... mostly "dos" console code page 
+                                 ( for czech windows cp852 )
+
+   compile with -DUSE_RAW_TEXT 
+
+
+2) new option -F for "png" figures
+   -------------------------------
+   use Latex for figures (latex->dvips->gs->pbm->png)
+   (currently only black-white images supported)
+
+   compile with -DLATEX_FIGURES 
+
+3) new options -se# or -sf# for user png scale
+   -------------------------------------------
+   example: -s e1.1  set user multiplier for equations bitmaps to 1.1
+                     (default 1.22)
+            -s f0.95 set user multiplier for figures bitmaps to 0.95
+                     (default 1.35)
+ 
+   compile with -DUSER_SCALE
+
+4) inline qeuations vertical alignment for -M8 or -M12 
+   ---------------------------------------------------- 
+   requiered program pnm2png (currently only os2 version)
+
+   compile with -DINLINE_EQ_ALIGN
+
+   new option -X disable inline equation bitmap vertical alignment 
+   (if pmn2png not used) 
+
+instalation:
+============
+1) copy latex2rtf.exe latex2png.cmd pnm2png.exe to %PATH%
+2) edit variable LATEX in latex2png.cmd
+   example: 
+   LATEX="tex -progname=cslatex -default-translate-file=cp852-cs"
+2) copy cfg/* to c:/usr/local/share/latex2rtf/cfg or to other
+   directory , use switch -P , example: latex2rtf -P e:/home/l2r/cfg
+
+requiered:
+==========
+emx runtime,tex,sh,gsos2
+
+notes:
+======
+1) read latex2rtf original documentation 
+2) option -i : only small subseet languages curerently 
+               supported in original code
+
+
+horeni@quick.cz

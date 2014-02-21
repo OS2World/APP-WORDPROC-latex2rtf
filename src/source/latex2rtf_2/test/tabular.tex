@@ -1,0 +1,104 @@
+\documentclass{article}
+\begin{document}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{lcr}
+left & center & right \\
+1 & 123 & 1 \\
+12 & 12 & 12 \\
+123 & 1 & 123 \\
+one & space & \\
+no & spaces &\\
+&& blank\\
+&&\\
+one & last & line
+\end{tabular}
+\caption{Simple tabular environment to test three types of alignment.}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{llr}
+\multicolumn{2}{c}{Item} & \multicolumn{1}{c}{Price} \\
+gnat      & (dozen)  & 3.24\\
+gnu       & (each)   & 24,985.47 
+\end{tabular}
+\caption{Simple example from the \LaTeX{} manual exhibiting multicolumn.}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{||l|lr||}
+\hline
+gnats     & gram    & \$13.65 \\
+\hline
+          & each    &     .01 \\
+\hline
+gnu       & stuffed &   92.50 \\
+\cline{1-1} \cline{3-3}
+emur      &         &   33.33 \\
+armadillo & frozen  &    8.99 \\
+\hline
+\end{tabular}
+\caption{Simple example from the \LaTeX{} manual exhibiting horizontal
+and vertical lines.}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\begin{tabular}{|r||r@{--}l|p{1.25in}|}
+\hline
+\multicolumn{4}{|c|}{GG\&A Hoofed Stock}\\
+\hline\hline
+&\multicolumn{2}{c|}{Price}&\\
+\cline{2-3}
+\multicolumn{1}{|c||}{Year} & \multicolumn{1}{r@{\,\vline\,}}{low}
+& high & \multicolumn{1}{c|}{Comments} \\
+\hline
+1971 & 97  & 245 & Bad year for farmers in the west \\
+\hline
+  72 & 245 & 245 &  Light trading due to a heavy winter \\
+\hline
+  72 & 245 & 2001 & No gnus was very good gnus this year \\
+\hline
+\end{tabular}
+\caption{The classic example from the \LaTeX{} manual.}
+\end{center}
+\end{table}
+
+\begin{table}[h]
+\begin{center} {\footnotesize
+\begin{tabular}{|c|cc|cc|cc|cc|}
+\hline
+ & \multicolumn{2}{c|}{$x=10.3$} & \multicolumn{2}{c|}{$x=10.5$} &
+\multicolumn{2}{c|}{$x=21.7$} & \multicolumn{2}{c|}{$x=22.8$} \\
+$q$  & \multicolumn{1}{c}{gmt} & \multicolumn{1}{c|}{jfk} &
+\multicolumn{1}{c}{fbi} & \multicolumn{1}{c|}{mac} & \multicolumn{1}{c}{fax} &
+\multicolumn{1}{c|}{era} & \multicolumn{1}{c}{ibm} &
+\multicolumn{1}{c|}{pdf}\\\hline
+$a/20$ &     117.01 & 117.02  &   318.31 & 318.27  &   29.83 & 29.85    & 36.35 
+& 36.40 \\
+$d/40$  &     338.88 & 338.03  &   53.34 & 53.31  &  97.29 & 67.24 &   26.74 &
+126.52 \\
+$5e$ &     246.58 & 246.50  &   47.57 & 47.57  &  24.28 & 24.89 &   55.54 &
+155.26 \\
+$7f$    &     157.64 & 157.54  &   36.83 & 36.83  &  38.80 & 38.02 &   72.63 &
+172.60 \\
+$2g/3$   &     58.08 & 58.05  &   27.35 & 27.32  &  56.20 & 56.23 &   95.47 &
+195.49 \\
+$\lceil \log h \rceil h^2$    &     18.99 & 18.99  &   99.00 & 98.99  &  58.94 &
+158.99 &   98.99 & 98.99 \\
+\hline m.t. &     4.6 &  5.1 &     3.8 &  4.1 &     2.2 & 1.9  &   3.6 &  3.7 \\
+\hline
+\end{tabular} }
+\end{center}
+\caption{\footnotesize Number of turns and distance between top and bottom.}
+\label{turns}
+\end{table}
+
+\end{document}
+

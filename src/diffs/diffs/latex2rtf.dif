@@ -1,0 +1,624 @@
+diff -Naur latex2rtf/cfg.c latex2rtf_2/cfg.c
+--- latex2rtf/cfg.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/cfg.c	Tue Sep 17 10:08:04 2002
+@@ -141,6 +141,7 @@
+ 
+ /* last resort.  try CFGDIR */
+ 	lib_path = strdup(CFGDIR);
++
+ 	if (lib_path) {
+ 		p = lib_path;
+ 		while (p) {
+diff -Naur latex2rtf/encode.c latex2rtf_2/encode.c
+--- latex2rtf/encode.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/encode.c	Sun Sep 15 14:11:38 2002
+@@ -1826,6 +1826,11 @@
+ {
+ 	int index = (int) cThis + 128;
+ 	diagnostics(5, "WriteEightBitChar char=%d index=%d encoding=%s",(int) cThis, index, g_encoding);
++#ifdef USE_RAW_TEXT
++	if (strcmp(g_encoding, "raw") == 0)
++		fprintRTF("\\'%2X",(unsigned char)cThis);
++        else 
++#endif
+ 	if (strcmp(g_encoding, "applemac") == 0)
+ 		applemac_enc(index);
+ 	else if (strcmp(g_encoding, "cp437") == 0)
+diff -Naur latex2rtf/equation.c latex2rtf_2/equation.c
+--- latex2rtf/equation.c	Sun Jul 28 00:04:42 2002
++++ latex2rtf_2/equation.c	Tue Sep 17 09:27:58 2002
+@@ -224,6 +224,11 @@
+ 	/* create needed file names */
+ 	file_number++;
+ 	tmp_dir = getTmpPath();
++#ifdef INLINE_EQ_ALIGN
++        if(g_inline_eq_align&&!strcmp(pre,"$"))
++       	   sprintf(name, "l2r-%04d", file_number);
++        else 
++#endif
+ 	sprintf(name, "l2r_%04d", file_number);
+ 	fullname = strdup_together(tmp_dir, name);	
+ 	texname = strdup_together(fullname,".tex");
+@@ -239,6 +244,10 @@
+ 		fprintf(f, "\\setcounter{equation}{%d}\n",getCounter("equation"));
+ 		if (strstr(pre, "equation"))
+ 			fprintf(f, "$$%s$$", eq);
++#ifdef INLINE_EQ_ALIGN
++                else if(g_inline_eq_align&&!strcmp(pre,"$"))
++			fprintf(f, "%s.\\quad %s%s", pre, eq, post);
++#endif
+ 		else
+ 			fprintf(f, "%s%s%s", pre, eq, post);
+ 		fprintf(f, "\n\\end{document}");
+diff -Naur latex2rtf/funct1.c latex2rtf_2/funct1.c
+--- latex2rtf/funct1.c	Mon Aug  5 06:05:58 2002
++++ latex2rtf_2/funct1.c	Tue Sep 17 14:16:18 2002
+@@ -1389,6 +1389,169 @@
+ 	fprintRTF("{\\fs%d  }", size);
+ }
+ 
++#ifdef LATEX_FIGURES
++
++#include<stdlib.h>
++
++#ifndef USER_SCALE
++#define setUserPngScale(x) (0)
++#endif
++
++#ifdef __EMX__
++char *_getcwd2 (char *, int); /* NO __STRICT_ANSI__ */
++#define GETCWD _getcwd2
++#else
++#define GETCWD getcwd
++#endif
++
++static void insert(char *pos, char *s)
++{ int l=strlen(s),L=strlen(pos);
++  char *p=pos,*q=pos+l;
++  memmove(q,p,L+1);
++  memmove(p,s,l);
++}
++
++char *file_id[]={ "\\epsffile",
++                  "\\includegraphics",
++                  0};
++
++static void insert_path(char *txt)
++{ char cwd[1024],*p;
++  int  i=0;
++  GETCWD(cwd,1024);
++  p=cwd+strlen(cwd); *p++=PATHSEP; *p++=0;
++  diagnostics(4, "CWD = <%s>", cwd);
++  while(file_id[i]!=0)
++   { char *p=strstr(txt,file_id[i]);
++     if(p){ p+=strlen(file_id[i]);
++            while(*p&&(*p==' '||*p=='{'))p++;
++            insert(p,cwd);
++          } 
++     i++;
++   } 
++}
++
++char *
++ExtractCaptionTag(char *text, int remove)
++/******************************************************************************
++  purpose: return a copy of tag from \caption{tag} in the string text
++ ******************************************************************************/
++{       char *s, *caption_with_spaces, *caption, *start, *end=0;
++
++	s = strstr(text,"\\caption{");
++	if (!s) s = strstr(text,"\\caption ");
++	if (!s) return NULL;
++	
++        start=s;
++
++	s += strlen("\\caption");
++	PushSource(NULL,s);
++	caption_with_spaces = getBraceParam();
++	PopSource();
++        if(caption_with_spaces)
++          { end=strstr(s,caption_with_spaces);
++            if(end)end+=strlen(caption_with_spaces)+1;
++          } 
++	caption = strdup(caption_with_spaces);
++	free(caption_with_spaces);
++        if(start&&end)
++          { while(*end)(*start++=*end++);
++            *start=0; 
++          }
++	diagnostics(4, "CaptionTag = <%s>", (caption) ? caption : "missing");
++
++	return caption;
++}
++
++char *g_figure_caption=0;
++
++void 
++CmdLatexFigure(int code)
++{
++	char *pre, *post, *picture, *loc, old_align;	
++	diagnostics(1, "Entering CmdFigure");	
++	if (code & ON) {
++                double old_user_png_scale;
++                int    width,b;
++		loc = getBracketParam();
++		diagnostics(4, "entering CmdFigure [%s]", loc);
++		g_processing_figure = TRUE;
++		if (loc) free(loc);
++		pre = strdup("\\begin{figure}");
++		post = strdup("\\end{figure}");
++		picture=getTexUntil(post,0);
++                picture=(char*)realloc(picture,strlen(picture)+2048); 
++		g_figure_label = ExtractLabelTag(picture);
++                g_figure_caption = ExtractCaptionTag(picture,1);
++                insert_path(picture); 
++                diagnostics(4, "Figure label [%s] caption [%s]", 
++                                g_figure_label?g_figure_label:"", 
++                                g_figure_caption?g_figure_caption:"");
++
++	        old_align = alignment;
++	        alignment = CENTERED;
++
++		CmdEndParagraph(0);
++  	        SetTexMode(MODE_DISPLAYMATH);
++
++		g_show_equation_number = FALSE;
++	        width = getLength("textwidth");
++	        b = 0.50 * width;
++
++		fprintRTF("{\\pard\\tqc\\tx%d\\tab ", b);
++                old_user_png_scale=setUserPngScale(g_user_fig_scale);
++		WriteLatexAsBitmap(pre,picture,post);
++                setUserPngScale(old_user_png_scale);
++        	CmdEndParagraph(0);
++ 	        fprintRTF("}");
++		CmdIndent(INDENT_INHIBIT);
++  	        SetTexMode(MODE_HORIZONTAL);
++		ConvertString(post);  /* to balance the \begin{figure} */
++                alignment = old_align;
++		free(pre);
++		free(post);
++		free(picture);
++	} else {
++	         int   n;
++	         char number[20];
++	         old_align = alignment;
++ 	         alignment = CENTERED;
++
++	         CmdStartParagraph(0);
++
++	         fprintRTF("{");
++		 incrementCounter("figure");
++		 ConvertBabelName("FIGURENAME");
++		 n = getCounter("figure");
++ 	         fprintRTF(" ");
++	         if (g_document_type != FORMAT_ARTICLE) 
++		      sprintf(number, "%d.%d", getCounter("chapter"), n);
++	         else
++		      sprintf(number, "%d", n);
++	
++	         if (g_processing_figure && g_figure_label)
++		           InsertBookmark(g_figure_label, number);
++	
++	         fprintRTF(":  ");
++	         ConvertString(g_figure_caption);
++  	         fprintRTF("}");
++	         CmdEndParagraph(0);
++	         alignment = old_align;
++	         diagnostics(4, "exiting CmdCaption");
++
++		 if (g_figure_label)   { free(g_figure_label); 
++                                         g_figure_label=0;
++                                       }
++		 if (g_figure_caption) { free(g_figure_caption);
++                                         g_figure_caption=0;
++                                       }
++		 g_processing_figure = FALSE;
++		 diagnostics(4, "exiting CmdFigure");
++	}
++}
++
++#endif
++
+ void 
+ CmdFigure(int code)
+ /******************************************************************************
+@@ -1399,6 +1562,12 @@
+   		   the process the environment as usual.
+  ******************************************************************************/
+ {
++#ifdef LATEX_FIGURES
++    if(g_latex_figures)
++       CmdLatexFigure(code);
++    else 
++      {
++#endif
+ 	char            *loc, *figure_contents;
+ 	char endfigure[] = "\\end{figure}";
+ 
+@@ -1417,7 +1586,12 @@
+ 		g_processing_figure = FALSE;
+ 		diagnostics(4, "exiting CmdFigure");
+ 	}
++#ifdef LATEX_FIGURES
++   }
++#endif
+ }
++
++
+ 
+ void 
+ CmdIgnoreEnviron(int code)
+diff -Naur latex2rtf/graphics.c latex2rtf_2/graphics.c
+--- latex2rtf/graphics.c	Thu Jul 25 11:09:04 2002
++++ latex2rtf_2/graphics.c	Tue Sep 17 09:30:08 2002
+@@ -511,6 +511,28 @@
+ 	fclose(fp);
+ }
+ 
++#ifdef INLINE_EQ_ALIGN
++
++void GetPngOffset(char *file, int *offset)
++/*--------------------------------------*/
++{ char buf[1024],*p;
++  *offset=0;
++  strcpy(buf,file);
++  if((p=strstr(buf,".png"))!=0)
++   { FILE *F;
++     strcpy(p,".off");
++     if((F=fopen(buf,"r"))!=0) 
++           { int x;
++             buf[0]=0;      
++             fgets(buf,1024,F);
++             if(sscanf(buf,"%d",&x)==1)*offset=x;
++             fclose(F);
++           }
++   }
++}
++  
++#endif
++
+ void 
+ PutPngFile(char * s, double scale, int full_path)
+ /******************************************************************************
+@@ -521,7 +543,10 @@
+ 	char *png;
+ 	unsigned long width, height, w, h;
+ 	int iscale;
+-
++#ifdef INLINE_EQ_ALIGN
++        int offset;
++        unsigned long o;
++#endif
+ 	if (full_path)
+ 		png = strdup(s);
+ 	else
+@@ -529,7 +554,10 @@
+ 	diagnostics(1, "PutPngFile <%s>",png);
+ 
+ 	GetPngSize(png, &width, &height);
+-
++#ifdef INLINE_EQ_ALIGN
++        GetPngOffset(png,&offset); 
++	diagnostics(1,"offset = %ld", offset);
++#endif
+ 	diagnostics(1,"width = %ld, height = %ld", width, height);
+ 	if (width==0) return;
+ 	
+@@ -539,6 +567,13 @@
+ 
+ 	w = (unsigned long)( 100000.0*width  )/ ( 20* POINTS_PER_M );
+ 	h = (unsigned long)( 100000.0*height )/ ( 20* POINTS_PER_M );
++#ifdef INLINE_EQ_ALIGN
++        o = (unsigned long)( 100000.0*abs(offset)*scale )/ ( 20* POINTS_PER_M );        
++        if(g_inline_eq_align&&o!=0)
++   	     fprintRTF("\n{\\%s%d\\pict\\pngblip\\picw%ld\\pich%ld",
++                          offset>0?"up":"dn", o ,w, h);
++        else 
++#endif
+ 	fprintRTF("\n{\\pict\\pngblip\\picw%ld\\pich%ld", w, h);
+ 	fprintRTF("\\picwgoal%ld\\pichgoal%ld", width*20, height*20);
+ 	if (scale != 1.0) {
+@@ -893,15 +928,29 @@
+ 			GetPngSize(png, &width, &height);
+ 			diagnostics(4, "png size width=%d height =%d", width, height);
+ 		}
++#ifdef MY_CHANGES
++                if(width>max||height>max)
++                   { int rw=((resolution*max)/width)*2,
++                         rh=((resolution*max)/height)*2; 
++                     resolution=rw<rh?rw:rh;
++                   }
++#endif
+ 	} while (!err && resolution>10 && ( (width>max) || (height>max)) );
+ 	
+ 	if (err==0)
+-		PutPngFile(png,TRUE,72.0/resolution);
+-	
++#ifdef USER_SCALE
++             {  double usc=getUserPngScale();
++                if(usc<=0)usc=1.0;
++		PutPngFile(png,usc*72.0/resolution,TRUE);
++             }   
++#else
++		PutPngFile(png,72.0/resolution,TRUE);
++#endif	
+ 	free(png);
+ 	free(cmd);
+ }
+ 
++
+ void 
+ CmdGraphics(int code)
+ /*
+@@ -929,7 +978,7 @@
+ 	if (options) free(options);
+ 	
+ 	filename = getBraceParam();
+-	
++
+ 	if (strstr(filename, ".pict") || strstr(filename, ".PICT"))
+ 		PutPictFile(filename, FALSE);
+ 		
+diff -Naur latex2rtf/main.c latex2rtf_2/main.c
+--- latex2rtf/main.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/main.c	Tue Sep 17 10:37:20 2002
+@@ -63,6 +63,9 @@
+ bool            RussianMode = FALSE;	/* support russianstyle */
+ 
+ char            g_encoding[20] = "cp1252";
++#ifdef USE_RAW_TEXT
++int             g_fcharset = 0;
++#endif
+ bool            twoside = FALSE;
+ int      		g_verbosity_level = WARNING;
+ bool			g_little_endian = FALSE;  /* set properly in main() */
+@@ -92,6 +95,16 @@
+ char           *g_preamble = NULL;
+ char     		g_field_separator = ',';
+ 
++#ifdef USER_SCALE
++double                  g_user_eq_scale=1.22;
++double                  g_user_fig_scale=1.35; 
++#endif /* USER_SCALE */
++#ifdef INLINE_EQ_ALIGN
++bool                    g_inline_eq_align         = TRUE;
++#endif
++#ifdef LATEX_FIGURES
++bool                    g_latex_figures           = FALSE;
++#endif
+ bool			g_equation_display_rtf    = TRUE;
+ bool			g_equation_inline_rtf     = TRUE;
+ bool			g_equation_inline_bitmap  = FALSE;
+@@ -126,7 +139,11 @@
+ 	SetEndianness();
+ 	progname = argv[0];
+ 	optind = 1;
++#if defined LATEX_FIGURES || defined USER_SCALE || defined INLINE_EQ_ALIGN
++	while ((c = getopt(argc, argv, "XFlhvSVWZ:o:a:b:d:i:s:C:D:M:P:T:")) != EOF) {
++#else
+ 	while ((c = getopt(argc, argv, "lhvSVWZ:o:a:b:d:i:C:D:M:P:T:")) != EOF) {
++#endif
+ 		switch (c) {
+ 		case 'a':
+ 			g_aux_name = optarg;
+@@ -141,6 +158,30 @@
+ 				usage();
+ 			}
+ 			break;
++#if defined  LATEX_FIGURES || defined USER_SCALE || defined INLINE_EQ_ALIGN
++                case 'F':
++#ifdef LATEX_FIGURES
++                        g_latex_figures=TRUE;
++#endif
++                        break;  
++                case 'X':
++#ifdef INLINE_EQ_ALIGN
++                        g_inline_eq_align=g_inline_eq_align?FALSE:TRUE;
++#endif
++                        break;  
++                case 's':
++#ifdef USER_SCALE
++                        { double x;
++                          if(optarg&&optarg[0]=='e'&&
++                             sscanf(optarg,"e%lf",&x)==1&&x>0)
++                                   g_user_eq_scale=x;
++                          else if(optarg&&optarg[0]=='f'&&
++                             sscanf(optarg,"f%lf",&x)==1&&x>0)
++                                   g_user_fig_scale=x;
++                        }
++#endif
++                        break;
++#endif
+ 		case 'i':
+ 			setPackageBabel(optarg);
+ 			break;
+diff -Naur latex2rtf/main.h latex2rtf_2/main.h
+--- latex2rtf/main.h	Mon Aug  5 06:06:00 2002
++++ latex2rtf_2/main.h	Tue Sep 17 10:29:24 2002
+@@ -112,6 +112,9 @@
+ extern bool     g_aux_file_missing;
+ extern int    	g_document_type;
+ extern char     g_encoding[20];
++#ifdef USE_RAW_TEXT
++extern int      g_fcharset;
++#endif
+ extern char		*g_figure_label;
+ extern char		*g_table_label;
+ extern char		*g_equation_label;
+@@ -119,7 +122,16 @@
+ extern char		*g_config_path;
+ extern char     g_field_separator;
+ extern char    *g_preamble;
+-
++#ifdef INLINE_EQ_ALIGN
++extern bool             g_inline_eq_align;
++#endif
++#ifdef LATEX_FIGURES
++extern bool             g_latex_figures;
++#endif
++#ifdef USER_SCALE
++extern double           g_user_eq_scale; 
++extern double           g_user_fig_scale; 
++#endif
+ extern bool		g_equation_inline_rtf;
+ extern bool		g_equation_display_rtf;
+ extern bool		g_equation_inline_bitmap;
+diff -Naur latex2rtf/Makefile latex2rtf_2/Makefile
+--- latex2rtf/Makefile	Mon Aug  5 06:05:58 2002
++++ latex2rtf_2/Makefile	Tue Sep 17 13:28:30 2002
+@@ -1,11 +1,15 @@
+ # $Id: Makefile,v 1.57 2002/08/05 04:05:59 prahl Exp $
+ 
++EXESFX=.exe
++OS2_CFLAGS=-DUNIX -DENVSEP=\';\' -DINLINE_EQ_ALIGN
++
+ CC=gcc
+ MKDIR=mkdir -p
+-LIBS=-lMallocDebug -force_flat_namespace
++#LIBS=-lMallocDebug -force_flat_namespace
+ #LIBS=
+ 
+-CFLAGS:=-DUNIX
++CFLAGS:= $(OS2_CFLAGS) -DUSE_RAW_TEXT -DMY_CHANGES -DUSER_SCALE -DLATEX_FIGURES
++#CFLAGS:=-DUNIX
+ #CFLAGS:=-DMSDOS
+ #CFLAGS:=-DMACINTOSH
+ 
+@@ -16,7 +20,8 @@
+ CFLAGS:=$(CFLAGS) -g -Wall -ansi
+ 
+ #Base directory
+-PREFIX=/usr/local
++#PREFIX=/usr/local
++PREFIX=c:/usr/local
+ 
+ # Location of binary, man, info, and support files
+ BIN_INSTALL=$(PREFIX)/bin
+@@ -80,22 +85,22 @@
+ 	preamble.o letterformat.o equation.o convert.o xref.o definitions.o graphics.o \
+ 	optind.o mygetopt.o
+ 
+-all : checkdir latex2rtf
++all : checkdir latex2rtf$(EXESFX)
+ 	touch stamp-build
+ 
+-latex2rtf: $(OBJS) $(HDRS)
+-	$(CC) $(CFLAGS) $(OBJS)	$(LIBS) -o latex2rtf
++latex2rtf$(EXESFX): $(OBJS) $(HDRS)
++	$(CC) $(CFLAGS) $(OBJS)	$(LIBS) -o latex2rtf$(EXESFX)
+ 
+ cfg.o: Makefile
+ 	$(CC) $(CFLAGS) -DCFGDIR=\"$(CFG_INSTALL)\" -c cfg.c -o cfg.o
+ 
+-check test: latex2rtf
++check test: latex2rtf$(EXESFX)
+ 	cd test && $(MAKE) 
+ 
+ checkdir: $(README) $(SRCS) $(HDRS) $(CFGS) $(SCRIPTS) $(TEST) doc/latex2rtf.texi
+ 
+ clean: checkdir
+-	rm -f $(OBJS) core latex2rtf
++	rm -f $(OBJS) core latex2rtf$(EXESFX)
+ 
+ depend: $(SRCS)
+ 	$(CC) -MM $(SRCS) >makefile.depend
+@@ -126,7 +131,7 @@
+ 	$(MKDIR) $(BIN_INSTALL)
+ 	$(MKDIR) $(MAN_INSTALL)
+ 	$(MKDIR) $(CFG_INSTALL)
+-	cp latex2rtf          $(BIN_INSTALL)
++	cp latex2rtf$(EXESFX) $(BIN_INSTALL)
+ 	cp scripts/latex2png  $(BIN_INSTALL)
+ 	cp doc/latex2rtf.1    $(MAN_INSTALL)
+ 	cp doc/latex2png.1    $(MAN_INSTALL)
+diff -Naur latex2rtf/preamble.c latex2rtf_2/preamble.c
+--- latex2rtf/preamble.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/preamble.c	Tue Sep 17 07:17:28 2002
+@@ -118,6 +118,23 @@
+ 	         strcmp(option, "koi8-r") == 0 ||
+ 	         strcmp(option, "koi8-u") == 0 ) 
+ 		strcpy(g_encoding, option);
++#ifdef USE_RAW_TEXT
++        else if (strcmp(option,  "1250") == 0 ) /* abbreviation */
++              { g_fcharset=238;
++               	strcpy(g_encoding, "raw");
++              }   
++        else if (strcmp(option,  "oem") == 0 ) /* abbreviation */
++              { g_fcharset=255;                /* windows "dos" code page */    
++               	strcpy(g_encoding, "raw");      
++              }   
++        else if (strncmp(option,  "chs", 3) == 0 ) /* direct fcharet */
++              { int x;
++                if(sscanf(option,"chs%d",&x)==1&&x>=0&&x<256)
++                    { g_fcharset=x;
++               	      strcpy(g_encoding, "raw");
++                    }     
++              } 
++#endif     
+ 	else
+ 		diagnostics(WARNING,"\n Input Encoding <%s> not supported", option);
+ }
+@@ -732,8 +749,11 @@
+ 	
+ 		font_type = (char *)(*config_handle)->TexCommand;
+ 		font_name = (char *)(*config_handle)->RtfCommand;
++#ifdef USE_RAW_TEXT
++	        charset=g_fcharset;
++#else
+ 		charset = 0;
+-		
++#endif		
+ 		if (strncmp(font_name, "Symbol", 6)==0)
+ 			charset = 2;
+ 			
+diff -Naur latex2rtf/util.c latex2rtf_2/util.c
+--- latex2rtf/util.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/util.c	Tue Sep 17 08:50:48 2002
+@@ -158,3 +158,20 @@
+ }
+ 
+ 
++#ifdef USER_SCALE
++
++static double user_png_scale=-1.0;
++
++double getUserPngScale()
++{ if(user_png_scale==-1)user_png_scale=g_user_eq_scale>0?g_user_eq_scale:1.0;
++  return user_png_scale;
++}
++
++double setUserPngScale(double sc)
++{ double rc=user_png_scale;
++  if(sc>0) user_png_scale=sc;
++  else     user_png_scale=g_user_eq_scale;
++  return rc;
++}
++
++#endif
+diff -Naur latex2rtf/util.h latex2rtf_2/util.h
+--- latex2rtf/util.h	Thu May  2 16:47:20 2002
++++ latex2rtf_2/util.h	Tue Sep 17 07:57:28 2002
+@@ -7,3 +7,8 @@
+ char *	strdup_noendblanks(char *s);
+ char *	ExtractLabelTag(char *text);
+ 
++
++#ifdef USER_SCALE
++double getUserPngScale();
++double setUserPngScale(double sc);  /* return old value */
++#endif
+\ No newline at end of file
+diff -Naur latex2rtf/xref.c latex2rtf_2/xref.c
+--- latex2rtf/xref.c	Sun Jun 23 17:00:36 2002
++++ latex2rtf_2/xref.c	Tue Sep 17 15:03:42 2002
+@@ -327,6 +327,9 @@
+ 				fprintRTF("{\\fldrslt{");
+ 				if (s && 0)
+ 					ConvertString(s);
++#ifdef MY_CHANGES
++                                else if(s) fprintRTF(s); 
++#endif
+ 				else
+ 					fprintRTF("?");
+ 				fprintRTF("}}}");

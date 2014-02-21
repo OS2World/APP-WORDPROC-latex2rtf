@@ -1,0 +1,33 @@
+Fit & Finish:
+
+	Improve spacing before and after \section etc.
+	Improve font sizes in \section etc.
+	Reset footnote numbering at each new chapter
+
+Potential Features:
+
+	New diagnostic level to replace Warning for expected stuff
+	Support \includegraphics options (both graphics and graphicx)
+
+	Translation when .aux is absent.
+
+	add support for \symbol{\'134}
+	finish special cases for \char 'xxx
+	
+	Add default page numbering
+	
+        Add support for \usepackage{endfloat}
+	Add support for \usepackage{fullpage}
+	Add support for \usepackage{doublespace}
+	Add support for \mark commands
+	
+	Add autonumbering of equations using fields
+	
+	Style stuff in rtf header
+		add style support for quote environment
+		add style support for enumerate environment
+ 		add back style support for \section, \subsection
+
+	support \hsize
+	add support for \vspace
+	add support for \hspace

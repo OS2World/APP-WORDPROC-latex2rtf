@@ -1,0 +1,169 @@
+This is Info file latex2rtf.info, produced by Makeinfo-1.64 from the
+input file latex2rtf.texi.
+
+   This file documents  LaTeX2RTF , a converter that translates  LaTeX
+ifnottex  to RTF.
+
+   Copyright 1998-2002 Georg Lehner, minor updates by Wilfried Hennings
+and Scott Prahl
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   versions of this manual under the conditions for verbatim copying,
+provided also that the sections entitled "Copying" and "GNU General
+Public License" are included exactly as in the original, and provided
+that the entire resulting derived work is distributed under the terms of
+a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+
+   ifinfo
+
+
+File: latex2rtf,  Node: Top,  Next: History
+
+
+LaTeX2RTF
+ ifnottex
+
+*********************
+
+   This file documents  LaTeX2RTF  ifnottex , a converter that
+translates  LaTeX  ifnottex  to RTF.
+
+   ifnottex
+
+* Menu:
+
+* History::
+* Introduction::
+* Availability::
+* Installing LaTeX2RTF::
+* Using LaTeX2RTF::
+* Features::
+* Configuring LaTeX2RTF ::
+* Error Messages and Logging ::
+* LaTeX2RTF under Development ::
+* Index for LaTeX2RTF ::
+
+
+File: latex2rtf,  Node: History,  Next: Introduction,  Prev: Top,  Up: Top
+
+History & Copyright
+*******************
+
+   In 1994 the first Version of  LaTeX2RTF  ifnottex  was written by
+Fernando Dorner and Andreas Granzer of the Viena University supervised
+by Ralf Schlatterbeck in a one-semester course. They created a simple
+LaTeX  ifnottex  parser and added most of the infrastructure for the
+program.  This was version 1.0 of  LaTeX2RTF  ifnottex .  In 1995, work
+on  LaTeX2RTF  ifnottex  was continued in another one-semester course
+by Friedrich Polzer and Gerhard Trisko. The result was  LaTeX2RTF
+ifnottex  version 1.5.  ralf@zoo.priv.at,Ralf Schlatterbeck maintained
+and extended  LaTeX2RTF  ifnottex  until 1998.
+
+   In 1998 jorge_lehner@gmx.net,Georg Lehner found the reference to
+LaTeX2RTF  ifnottex  on the
+http://tug.org/utilities/texconv/index.html, TeX Conversion Webpage  of
+W.Hennings@fz-juelich.de,Wilfried Hennings and added some functionality
+and took over the maintainence of the program.  The last version
+release by Georg is 1.8aa.  The bulk of development post 1.8aa was done
+by Scott Prahl.  Wilfried Hennings now coordinates the development of
+the program and maintains the project on
+http://sourceforge.net/projects/latex2rtf/,SourceForge where there are
+also (low volume) mailing lists for users
+latex2rtf-users@lists.sourceforge.net and developers
+latex2rtf-developers@lists.sourceforge.net.  For subscription to these
+lists: latex2rtf-users-request@lists.sourceforge.net?subject=subscribe
+or latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe
+
+   As of April 2002, version 1.9.13 of  LaTeX2RTF  ifnottex  is
+available.  One day there shall be a jump to Version 2.0, but this is
+not history but future ...
+
+   The contents of this manual were composed by copying shamelessly
+what was available in the original sources and documentation.
+
+
+File: latex2rtf,  Node: Introduction,  Next: Availability,  Prev: History,  Up: Top
+
+Introduction
+************
+
+   LaTeX2RTF  ifnottex  is a translator program from  LaTeX  ifnottex
+text into "rich text format" files.  These files are commonly referred
+to as RTF files.  RTF is a published standard format by Microsoft.
+This standard can be ambiguous in places and Microsoft ignores parts of
+the standard it finds inconvenient, but RTF is widely used by many
+WYSIWIG text editors and is supported by Microsoft Word and most text
+processors.
+
+   LaTeX2RTF  ifnottex  translates the text and as much of the
+formatting information from  LaTeX  ifnottex  to RTF.  Be forewarned
+that the typeset output is not nearly as good as what you would get
+from using  LaTeX  ifnottex  directly.  So, why bother translating?
+Consider,
+
+  1. You use  LaTeX
+         and hate everything beginning with MS- Nevertheless, you have
+to share your documents with people who don't even now that there exist
+other things than MS-
+
+   You know somebody who frequently sends you very fine  LaTeX  ifnottex
+documents. Unfortunately, you are "on the other side" and need to
+import her files, steal some part, and then desktop publish it in your
+fine MS-... environment.
+
+   enumerate
+
+   There are drawbacks to the conversion process. In fact, don't expect
+any  LaTeX  ifnottex  file to be converted as you would like, don't
+expect it to be converted without errors or warnings, and don't be
+especially surprised when it doesn't convert at all.   LaTeX2RTF
+ifnottex  is known to have many bugs and many missing features.
+Paradoxically, this number seems to grow more and more with each day.
+However, we can categorically state that there are some special cases,
+in which a  LaTeX  ifnottex  file will be translated to RTF
+satisfactorily by
+
+   LaTeX2RTF  ifnottex  -- This was sort of disclaimer, ok? OK!
+
+   LaTeX  ifnottex  is a system for typesetting text and therefore it
+focuses on the logical structure of a document, whilst RTF is meant to
+be a transport format for a family of Desktop Publishing Software,
+dealing mostly with the design of a text.
+
+   Although the possible different commands and styles in  LaTeX
+ifnottex  are much more flexible and standardized than in RTF, only a
+small subset of commands has been implemented to date.  *Note
+Unimplemented Features::.
+
+   Some of the capabilities of  LaTeX2RTF  ifnottex  are restricted in
+scope or buggy. *Note Known Bugs::.
+
+   RTF is a moving target, because Microsoft does not stop inventing
+new extensions and features for it. So you cannot view newer RTF files
+with older word processors.
+
+   LaTeX2RTF  ifnottex  eventually will generate RTF output that is
+unreadable with your Program.  The syntax and semantics of RTF are
+somewhat artistic, i.e., you can generate a syntactically correct RTF
+file that cannot be displayed by some/most word processors.
+
+   For more details on RTF look at the RTF-Tools by Paul DuBois, and
+the corresponding newsgroups, etc. http://www.primate.wisc.edu/
+
+
+File: latex2rtf,  Node: Availability,  Next: Installing LaTeX2RTF,  Prev: Introduction,  Up: Top
+
+Availability
+************
+
+   LaTeX2RTF  ifnottex  is available for many Unix Platforms, for the
+Macintosh, and for MS-DOS, including all versions of MS Windows 95.
+
